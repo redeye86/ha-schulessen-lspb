@@ -1,10 +1,10 @@
 {
   "domain": "schulessen_lspb",
   "name": "Schulessen (OPC WebApp)",
-  "codeowners": ["@florianschulte"],
+  "codeowners": ["@redeye86"],
   "config_flow": true,
-  "documentation": "https://github.com/florianschulte/ha-schulessen-lspb",
-  "issue_tracker": "https://github.com/florianschulte/ha-schulessen-lspb/issues",
+  "documentation": "https://github.com/redeye86/ha-schulessen-lspb",
+  "issue_tracker": "https://github.com/redeye86/ha-schulessen-lspb/issues",
   "iot_class": "cloud_polling",
   "requirements": ["beautifulsoup4>=4.12.0"],
   "version": "0.1.0"
