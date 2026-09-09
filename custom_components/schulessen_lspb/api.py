@@ -20,6 +20,12 @@ _LOGGER = logging.getLogger(__name__)
 PRICE_RE = re.compile(r"(\d+,\d{2})\s*€")
 DATE_RE = re.compile(r"(\d{2}\.\d{2}\.\d{4})")
 
+# "angebot_bestellt" marks a still-editable ordered item; once the ordering
+# deadline (15:00 the day before) passes, the same item switches to
+# "angebot_bestnoedit" (bestellt, nicht editierbar) instead. Both mean
+# "this was ordered".
+ORDERED_CLASSES = {"angebot_bestellt", "angebot_bestnoedit"}
+
 # Some OPC WebApp deployments (e.g. schulessen-bestellung.lspb.de) serve only
 # the leaf certificate without the intermediate CA. Browsers paper over this
 # by fetching the missing link via the certificate's AIA extension; Python's
@@ -216,7 +222,7 @@ class SchulessenClient:
                 price_match = PRICE_RE.search(cell.get_text(" ", strip=True))
                 price = price_match.group(1) + " €" if price_match else None
 
-                ordered = "angebot_bestellt" in (cell.get("class") or [])
+                ordered = bool(ORDERED_CLASSES & set(cell.get("class") or []))
                 angebot_id = cell.get("data-angebot-id")
 
                 day.options.append(
