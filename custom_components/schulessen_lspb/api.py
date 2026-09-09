@@ -219,6 +219,11 @@ class SchulessenClient:
                 column_el = cell.find(class_="angebot-spalte-name")
                 column = column_el.get_text(strip=True) if column_el else ""
 
+                if description == column:
+                    # Empty slot: the placeholder just repeats the column
+                    # name (e.g. "Menü 3") instead of a real dish.
+                    continue
+
                 price_match = PRICE_RE.search(cell.get_text(" ", strip=True))
                 price = price_match.group(1) + " €" if price_match else None
 
