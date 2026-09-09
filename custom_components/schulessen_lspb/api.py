@@ -122,9 +122,10 @@ class SchulessenClient:
     async def _get_csrf_token(self) -> str:
         async with self._session.get(self._base_url + "/login", ssl=_SSL_CONTEXT) as resp:
             await resp.text()
-        for cookie in self._session.cookie_jar.filter_cookies(self._base_url):
-            if cookie.key.upper() == "XSRF-TOKEN":
-                return cookie.value
+        cookies = self._session.cookie_jar.filter_cookies(self._base_url)
+        for name, morsel in cookies.items():
+            if name.upper() == "XSRF-TOKEN":
+                return morsel.value
         raise SchulessenConnectionError("XSRF-TOKEN cookie not set by server")
 
     async def login(self) -> None:
@@ -147,12 +148,19 @@ class SchulessenClient:
         async with self._session.post(
             self._base_url + "/api/login/authenticate", json=payload, headers=headers, ssl=_SSL_CONTEXT
         ) as resp:
-            if resp.status == 401 or resp.status == 403:
-                raise SchulessenAuthError("Login abgelehnt (falsche Kartennummer/Passwort?)")
-            if resp.status != 200:
-                raise SchulessenConnectionError(f"Unerwarteter Status beim Login: {resp.status}")
+            if resp.status == 200:
+                self._logged_in = True
+                return
 
-        self._logged_in = True
+            try:
+                error_data = await resp.json(content_type=None)
+                message = error_data.get("errorMessage") or str(resp.status)
+            except Exception:  # noqa: BLE001
+                message = str(resp.status)
+
+            if resp.status in (400, 401, 403):
+                raise SchulessenAuthError(f"Login abgelehnt: {message}")
+            raise SchulessenConnectionError(f"Unerwarteter Status beim Login: {resp.status} ({message})")
 
     async def _ensure_login(self) -> None:
         if not self._logged_in:
