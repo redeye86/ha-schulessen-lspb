@@ -1,8 +1,6 @@
 """Binary sensor for the Schulessen integration."""
 from __future__ import annotations
 
-from datetime import date
-
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -10,16 +8,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api import MenuDay
 from .const import DOMAIN
-
-
-def _today_entry(days: list[MenuDay]) -> MenuDay | None:
-    today = date.today()
-    for day in days:
-        if day.the_date == today:
-            return day
-    return None
+from .helpers import next_school_day
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -28,11 +18,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 
 class SchulessenNichtBestelltBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """On when there are offers for today but nothing has been ordered.
+    """On when the next school day has offers but nothing has been ordered yet.
 
-    Intended to drive an automation that reminds you to order before it's
-    too late. Off (no warning) on days with no offers at all, e.g. weekends
-    or holidays.
+    Ordering closes at 15:00 on the day before, so the day worth warning
+    about is the next school day, not today (today's order is already
+    locked in by the time this matters).
     """
 
     _attr_name = "Schulessen nicht bestellt"
@@ -50,14 +40,14 @@ class SchulessenNichtBestelltBinarySensor(CoordinatorEntity, BinarySensorEntity)
 
     @property
     def is_on(self) -> bool | None:
-        day = _today_entry(self.coordinator.data or [])
-        if day is None or not day.has_offers:
+        day = next_school_day(self.coordinator.data or [])
+        if day is None:
             return False
         return not day.has_order
 
     @property
     def extra_state_attributes(self) -> dict:
-        day = _today_entry(self.coordinator.data or [])
+        day = next_school_day(self.coordinator.data or [])
         if day is None:
             return {}
         return {"date": day.the_date.isoformat(), "weekday": day.weekday}
