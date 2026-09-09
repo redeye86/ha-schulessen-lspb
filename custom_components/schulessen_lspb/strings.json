@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Schulessen (OPC WebApp)",
+        "data": {
+          "kartennummer": "Kartennummer",
+          "passwort": "Passwort",
+          "base_url": "Basis-URL",
+          "mandant": "Mandant (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Anmeldung fehlgeschlagen. Bitte Kartennummer und Passwort prüfen.",
+      "cannot_connect": "Verbindung zum Server fehlgeschlagen.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Abfrageintervall (Minuten)"
+        }
+      }
+    }
+  }
+}

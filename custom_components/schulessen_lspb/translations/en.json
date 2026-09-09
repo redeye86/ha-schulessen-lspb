@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Schulessen (OPC WebApp)",
+        "data": {
+          "kartennummer": "Card number",
+          "passwort": "Password",
+          "base_url": "Base URL",
+          "mandant": "Tenant override (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login failed. Please check card number and password.",
+      "cannot_connect": "Could not connect to the server.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Poll interval (minutes)"
+        }
+      }
+    }
+  }
+}
