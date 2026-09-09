@@ -68,6 +68,42 @@ action:
       message: "Für den nächsten Schultag wurde noch nichts bestellt!"
 ```
 
+## Menüplan auf dem Dashboard anzeigen
+
+Die Sensor-*Zustände* (z.B. "10 Tage" bei `sensor.schulessen_menueplan`) sind
+bewusst kurz gehalten – Home-Assistant-Zustände sind für kurze Werte gedacht.
+Die eigentlichen Gerichte mit Datum stecken im Attribut `days` und lassen
+sich z.B. mit einer Markdown-Karte anzeigen:
+
+```yaml
+type: markdown
+title: Schulessen Menüplan
+content: >
+  {% for day in state_attr('sensor.schulessen_menueplan', 'days') %}
+  **{{ day.weekday }}, {{ day.date }}**
+  {% for o in day.options %}
+  - {{ '✅' if o.ordered else '▫️' }} {{ o.column }}: {{ o.description }} ({{ o.price }})
+  {% endfor %}
+
+  {% endfor %}
+```
+
+Für nur das heutige (bereits bestellte) Gericht direkt als Zustand reicht
+`sensor.schulessen_bestellt_heute` bzw. für den nächsten Schultag
+`sensor.schulessen_naechster_schultag` – beide zeigen den Gerichtnamen
+direkt als Zustand, nicht als Zahl. Wollen Sie stattdessen *alle* heute
+verfügbaren Gerichte (nicht nur das bestellte) sehen, nutzen Sie das
+`options`-Attribut von `sensor.schulessen_bestellt_heute`:
+
+```yaml
+type: markdown
+title: Heute verfügbar
+content: >
+  {% for o in state_attr('sensor.schulessen_bestellt_heute', 'options') %}
+  - {{ '✅' if o.ordered else '▫️' }} {{ o.column }}: {{ o.description }} ({{ o.price }})
+  {% endfor %}
+```
+
 ## Hinweise / Grenzen
 
 - Die Menüplan-Daten werden aus einem serverseitig gerenderten HTML-Fragment
