@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import re
+import ssl
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
@@ -18,6 +19,53 @@ _LOGGER = logging.getLogger(__name__)
 
 PRICE_RE = re.compile(r"(\d+,\d{2})\s*€")
 DATE_RE = re.compile(r"(\d{2}\.\d{2}\.\d{4})")
+
+# Some OPC WebApp deployments (e.g. schulessen-bestellung.lspb.de) serve only
+# the leaf certificate without the intermediate CA. Browsers paper over this
+# by fetching the missing link via the certificate's AIA extension; Python's
+# ssl module does not. Rather than disabling verification, we add the known,
+# long-lived Starfield intermediate as an extra trust anchor so full chain
+# verification still succeeds. Harmless no-op for servers that already send
+# a complete chain.
+_STARFIELD_G2_INTERMEDIATE = """-----BEGIN CERTIFICATE-----
+MIIFADCCA+igAwIBAgIBBzANBgkqhkiG9w0BAQsFADCBjzELMAkGA1UEBhMCVVMx
+EDAOBgNVBAgTB0FyaXpvbmExEzARBgNVBAcTClNjb3R0c2RhbGUxJTAjBgNVBAoT
+HFN0YXJmaWVsZCBUZWNobm9sb2dpZXMsIEluYy4xMjAwBgNVBAMTKVN0YXJmaWVs
+ZCBSb290IENlcnRpZmljYXRlIEF1dGhvcml0eSAtIEcyMB4XDTExMDUwMzA3MDAw
+MFoXDTMxMDUwMzA3MDAwMFowgcYxCzAJBgNVBAYTAlVTMRAwDgYDVQQIEwdBcml6
+b25hMRMwEQYDVQQHEwpTY290dHNkYWxlMSUwIwYDVQQKExxTdGFyZmllbGQgVGVj
+aG5vbG9naWVzLCBJbmMuMTMwMQYDVQQLEypodHRwOi8vY2VydHMuc3RhcmZpZWxk
+dGVjaC5jb20vcmVwb3NpdG9yeS8xNDAyBgNVBAMTK1N0YXJmaWVsZCBTZWN1cmUg
+Q2VydGlmaWNhdGUgQXV0aG9yaXR5IC0gRzIwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQDlkGZL7PlGcakgg77pbL9KyUhpgXVObST2yxcT+LBxWYR6ayuF
+pDS1FuXLzOlBcCykLtb6Mn3hqN6UEKwxwcDYav9ZJ6t21vwLdGu4p64/xFT0tDFE
+3ZNWjKRMXpuJyySDm+JXfbfYEh/JhW300YDxUJuHrtQLEAX7J7oobRfpDtZNuTlV
+Bv8KJAV+L8YdcmzUiymMV33a2etmGtNPp99/UsQwxaXJDgLFU793OGgGJMNmyDd+
+MB5FcSM1/5DYKp2N57CSTTx/KgqT3M0WRmX3YISLdkuRJ3MUkuDq7o8W6o0OPnYX
+v32JgIBEQ+ct4EMJddo26K3biTr1XRKOIwSDAgMBAAGjggEsMIIBKDAPBgNVHRMB
+Af8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUJUWBaFAmOD07LSy+
+zWrZtj2zZmMwHwYDVR0jBBgwFoAUfAwyH6fZMH/EfWijYqihzqsHWycwOgYIKwYB
+BQUHAQEELjAsMCoGCCsGAQUFBzABhh5odHRwOi8vb2NzcC5zdGFyZmllbGR0ZWNo
+LmNvbS8wOwYDVR0fBDQwMjAwoC6gLIYqaHR0cDovL2NybC5zdGFyZmllbGR0ZWNo
+LmNvbS9zZnJvb3QtZzIuY3JsMEwGA1UdIARFMEMwQQYEVR0gADA5MDcGCCsGAQUF
+BwIBFitodHRwczovL2NlcnRzLnN0YXJmaWVsZHRlY2guY29tL3JlcG9zaXRvcnkv
+MA0GCSqGSIb3DQEBCwUAA4IBAQBWZcr+8z8KqJOLGMfeQ2kTNCC+Tl94qGuc22pN
+QdvBE+zcMQAiXvcAngzgNGU0+bE6TkjIEoGIXFs+CFN69xpk37hQYcxTUUApS8L0
+rjpf5MqtJsxOYUPl/VemN3DOQyuwlMOS6eFfqhBJt2nk4NAfZKQrzR9voPiEJBjO
+eT2pkb9UGBOJmVQRDVXFJgt5T1ocbvlj2xSApAer+rKluYjdkf5lO6Sjeb6JTeHQ
+sPTIFwwKlhR8Cbds4cLYVdQYoKpBaXAko7nv6VrcPuuUSvC33l8Odvr7+2kDRUBQ
+7nIMpBKGgc0T0U7EPMpODdIm8QC3tKai4W56gf0wrHofx1l7
+-----END CERTIFICATE-----
+"""
+
+
+def _build_ssl_context() -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    context.load_verify_locations(cadata=_STARFIELD_G2_INTERMEDIATE)
+    return context
+
+
+_SSL_CONTEXT = _build_ssl_context()
 
 
 class SchulessenAuthError(Exception):
@@ -72,7 +120,7 @@ class SchulessenClient:
         self._logged_in = False
 
     async def _get_csrf_token(self) -> str:
-        async with self._session.get(self._base_url + "/login") as resp:
+        async with self._session.get(self._base_url + "/login", ssl=_SSL_CONTEXT) as resp:
             await resp.text()
         for cookie in self._session.cookie_jar.filter_cookies(self._base_url):
             if cookie.key.upper() == "XSRF-TOKEN":
@@ -97,7 +145,7 @@ class SchulessenClient:
         }
 
         async with self._session.post(
-            self._base_url + "/api/login/authenticate", json=payload, headers=headers
+            self._base_url + "/api/login/authenticate", json=payload, headers=headers, ssl=_SSL_CONTEXT
         ) as resp:
             if resp.status == 401 or resp.status == 403:
                 raise SchulessenAuthError("Login abgelehnt (falsche Kartennummer/Passwort?)")
@@ -115,7 +163,7 @@ class SchulessenClient:
         await self._ensure_login()
 
         url = f"{self._base_url}/api/menuplan/init/{week_index}"
-        async with self._session.get(url) as resp:
+        async with self._session.get(url, ssl=_SSL_CONTEXT) as resp:
             if resp.status in (401, 403) and retry:
                 self._logged_in = False
                 return await self.get_menu_week(week_index, retry=False)
