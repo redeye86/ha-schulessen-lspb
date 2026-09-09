@@ -1,0 +1,6 @@
+refresh:
+  name: Menüplan aktualisieren
+  description: >-
+    Ruft den Menüplan/Bestellstatus sofort neu ab, statt auf das nächste
+    reguläre Abfrageintervall zu warten. Aktualisiert alle konfigurierten
+    Schulessen-Konten.

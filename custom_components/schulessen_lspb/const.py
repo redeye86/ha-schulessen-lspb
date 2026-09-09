@@ -7,7 +7,7 @@ CONF_BASE_URL = "base_url"
 CONF_MANDANT = "mandant"
 
 DEFAULT_BASE_URL = "https://schulessen-bestellung.lspb.de"
-DEFAULT_SCAN_INTERVAL_MINUTES = 60
+DEFAULT_SCAN_INTERVAL_MINUTES = 240
 
 ATTR_DATE = "date"
 ATTR_WEEKDAY = "weekday"

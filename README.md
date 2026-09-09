@@ -8,15 +8,32 @@ gleichen Backend sollten ebenfalls funktionieren.
 
 ## Funktionsumfang
 
-- **`sensor.schulessen_bestellt_heute`** – zeigt an, was für heute tatsächlich
-  bestellt wurde (oder "Nichts bestellt").
-- **`sensor.schulessen_verfuegbar_heute`** – Anzahl der heute verfügbaren
-  Gerichte, mit allen Optionen (Name, Preis, bestellt ja/nein) als Attribut.
-- **`binary_sensor.schulessen_nicht_bestellt`** – **on**, wenn es heute
-  Angebote gibt, aber nichts bestellt wurde. Damit lässt sich eine
-  Erinnerungs-Automation bauen.
+Bestellungen sind immer nur bis 15:00 Uhr am Vortag möglich. Deshalb zielen
+die Warn-Entities nicht auf "heute" (das ist ja längst fixiert), sondern auf
+den **nächsten Schultag** – den Tag, für den man jetzt noch etwas ändern
+könnte.
+
+- **`sensor.schulessen_bestellt_heute`** – informativ: was für heute
+  tatsächlich bestellt wurde (oder "Nichts bestellt").
+- **`sensor.schulessen_naechster_schultag`** – bestelltes Gericht (oder
+  "Nichts bestellt") für den nächsten Tag mit Angeboten.
+- **`sensor.schulessen_menueplan`** – Liste aller kommenden Tage (aktuelle +
+  nächste Woche) mit allen verfügbaren Gerichten je Tag und ob/welches
+  bestellt wurde (Attribut `days`).
+- **`sensor.schulessen_bestellungen_im_voraus`** – Anzahl der Tage ab heute,
+  für die bereits eine Bestellung vorliegt.
+- **`binary_sensor.schulessen_nicht_bestellt`** – **on**, wenn es für den
+  nächsten Schultag Angebote gibt, aber nichts bestellt wurde. Damit lässt
+  sich eine Erinnerungs-Automation bauen.
 
 Die Integration bestellt nichts – sie liest nur.
+
+## Action: `schulessen_lspb.refresh`
+
+Ruft den Menüplan sofort neu ab, statt auf das reguläre Abfrageintervall zu
+warten (Standard: alle 4 Stunden, einstellbar über die Integrations-Optionen).
+Damit lässt sich das Intervall bewusst niedrig halten und stattdessen gezielt
+kurz vor der 15-Uhr-Bestellgrenze ein frischer Abruf per Automation auslösen.
 
 ## Installation über HACS
 
@@ -31,20 +48,24 @@ Die Integration bestellt nichts – sie liest nur.
 
 ## Beispiel-Automation
 
+Ruft kurz vor der Bestellgrenze (15:00 Uhr) frische Daten ab und warnt, falls
+für den nächsten Schultag noch nichts bestellt wurde:
+
 ```yaml
 alias: Erinnerung Schulessen nicht bestellt
 trigger:
   - platform: time
-    at: "18:00:00"
-condition:
+    at: "14:45:00"
+action:
+  - service: schulessen_lspb.refresh
+  - delay: "00:00:05"
   - condition: state
     entity_id: binary_sensor.schulessen_nicht_bestellt
     state: "on"
-action:
   - service: notify.mobile_app_dein_handy
     data:
       title: "Schulessen"
-      message: "Für morgen wurde noch nichts bestellt!"
+      message: "Für den nächsten Schultag wurde noch nichts bestellt!"
 ```
 
 ## Hinweise / Grenzen
