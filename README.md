@@ -13,8 +13,12 @@ die Warn-Entities nicht auf "heute" (das ist ja längst fixiert), sondern auf
 den **nächsten Schultag** – den Tag, für den man jetzt noch etwas ändern
 könnte.
 
-- **`sensor.schulessen_bestellt_heute`** – informativ: was für heute
-  tatsächlich bestellt wurde (oder "Nichts bestellt").
+- **`sensor.schulessen_bestellt_heute`** (Anzeigename "Schulessen aktuelles
+  Essen") – zeigt bis 14:00 Uhr das heutige bestellte Gericht, danach
+  automatisch das des nächsten Schultags (Umschalt-Stunde einstellbar über
+  die Integrations-Optionen). Der Zustand nennt immer den Wochentag, z.B.
+  `Donnerstag: Wrap mit Hähnchenstreifen`, damit auf dem Dashboard nie
+  unklar ist, für welchen Tag das Gericht gilt.
 - **`sensor.schulessen_naechster_schultag`** – bestelltes Gericht (oder
   "Nichts bestellt") für den nächsten Tag mit Angeboten.
 - **`sensor.schulessen_menueplan`** – Liste aller kommenden Tage (aktuelle +

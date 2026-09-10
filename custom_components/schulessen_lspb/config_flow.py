@@ -14,8 +14,10 @@ from .const import (
     CONF_BASE_URL,
     CONF_KARTENNUMMER,
     CONF_MANDANT,
+    CONF_SWITCH_HOUR,
     DEFAULT_BASE_URL,
     DEFAULT_SCAN_INTERVAL_MINUTES,
+    DEFAULT_SWITCH_HOUR,
     DOMAIN,
 )
 
@@ -78,6 +80,14 @@ class SchulessenOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        current = self._config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL_MINUTES)
-        schema = vol.Schema({vol.Optional("scan_interval", default=current): int})
+        current_interval = self._config_entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL_MINUTES)
+        current_switch_hour = self._config_entry.options.get(CONF_SWITCH_HOUR, DEFAULT_SWITCH_HOUR)
+        schema = vol.Schema(
+            {
+                vol.Optional("scan_interval", default=current_interval): int,
+                vol.Optional(CONF_SWITCH_HOUR, default=current_switch_hour): vol.All(
+                    vol.Coerce(int), vol.Range(min=0, max=23)
+                ),
+            }
+        )
         return self.async_show_form(step_id="init", data_schema=schema)

@@ -24,7 +24,8 @@
     "step": {
       "init": {
         "data": {
-          "scan_interval": "Abfrageintervall (Minuten)"
+          "scan_interval": "Abfrageintervall (Minuten)",
+          "switch_hour": "Umschalt-Stunde (aktuelles Essen -> nächster Schultag)"
         }
       }
     }

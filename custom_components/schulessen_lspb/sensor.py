@@ -8,8 +8,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
-from .helpers import count_advance_orders, next_school_day, sorted_from, today_entry
+from .const import CONF_SWITCH_HOUR, DEFAULT_SWITCH_HOUR, DOMAIN
+from .helpers import count_advance_orders, next_school_day, relevant_day, sorted_from
 
 
 def _day_to_dict(day) -> dict:
@@ -53,25 +53,36 @@ class _BaseSchulessenSensor(CoordinatorEntity, SensorEntity):
 
 
 class SchulessenOrderedTodaySensor(_BaseSchulessenSensor):
-    """What was actually ordered for today (informational, already locked in)."""
+    """What's ordered for the currently relevant day.
 
-    _attr_name = "Schulessen bestellt (heute)"
+    Before the configured switch hour (default 14:00) that's today; from
+    then on it switches to the next school day, since ordering closes at
+    15:00 the day before and today's order is already locked in by then.
+    The weekday is always spelled out in the state so it's never ambiguous
+    which day a dashboard card is showing.
+    """
+
+    _attr_name = "Schulessen aktuelles Essen"
     _attr_icon = "mdi:food"
 
     def __init__(self, coordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_ordered_today"
 
+    def _switch_hour(self) -> int:
+        return self._entry.options.get(CONF_SWITCH_HOUR, DEFAULT_SWITCH_HOUR)
+
     @property
     def native_value(self) -> str | None:
-        day = today_entry(self.coordinator.data or [])
-        if day is None or not day.ordered_options:
-            return "Nichts bestellt"
-        return ", ".join(o.description for o in day.ordered_options)
+        day = relevant_day(self.coordinator.data or [], switch_hour=self._switch_hour())
+        if day is None:
+            return None
+        meal = ", ".join(o.description for o in day.ordered_options) if day.ordered_options else "Nichts bestellt"
+        return f"{day.weekday}: {meal}"
 
     @property
     def extra_state_attributes(self) -> dict:
-        day = today_entry(self.coordinator.data or [])
+        day = relevant_day(self.coordinator.data or [], switch_hour=self._switch_hour())
         return _day_to_dict(day) if day else {}
 
 
