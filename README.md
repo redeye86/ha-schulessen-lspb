@@ -25,12 +25,16 @@ könnte.
   dem Umschalten falsch. Die Überschrift muss deshalb in `content` selbst
   gebaut werden, z.B. mit `is_today`:
 
+  Das `date`-Attribut ist ISO-Format (`YYYY-MM-DD`); mit `strptime` lässt
+  sich das nach `DD.MM.YYYY` umformatieren:
+
   ```yaml
   type: markdown
   content: >
     {% set s = 'sensor.schulessen_bestellt_heute' %}
+    {% set d = strptime(state_attr(s, 'date'), '%Y-%m-%d').strftime('%d.%m.%Y') %}
     ## Dein Gericht {{ 'heute' if state_attr(s, 'is_today') else 'am ' +
-    state_attr(s, 'weekday') }} ({{ state_attr(s, 'date') }})
+    state_attr(s, 'weekday') }} ({{ d }})
 
     {% for o in state_attr(s, 'options') %}{% if o.ordered %}
     **{{ o.column }}**: {{ o.description }}
