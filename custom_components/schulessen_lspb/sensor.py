@@ -1,6 +1,8 @@
 """Sensor entities for the Schulessen integration."""
 from __future__ import annotations
 
+from datetime import date
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -58,8 +60,8 @@ class SchulessenOrderedTodaySensor(_BaseSchulessenSensor):
     Before the configured switch hour (default 14:00) that's today; from
     then on it switches to the next school day, since ordering closes at
     15:00 the day before and today's order is already locked in by then.
-    The weekday is always spelled out in the state so it's never ambiguous
-    which day a dashboard card is showing.
+    `date`/`weekday`/`is_today` are exposed as attributes (not baked into
+    the state string) so a dashboard card can format them however it wants.
     """
 
     _attr_name = "Schulessen aktuelles Essen"
@@ -72,18 +74,26 @@ class SchulessenOrderedTodaySensor(_BaseSchulessenSensor):
     def _switch_hour(self) -> int:
         return self._entry.options.get(CONF_SWITCH_HOUR, DEFAULT_SWITCH_HOUR)
 
+    def _relevant_day(self):
+        return relevant_day(self.coordinator.data or [], switch_hour=self._switch_hour())
+
     @property
     def native_value(self) -> str | None:
-        day = relevant_day(self.coordinator.data or [], switch_hour=self._switch_hour())
+        day = self._relevant_day()
         if day is None:
             return None
-        meal = ", ".join(o.description for o in day.ordered_options) if day.ordered_options else "Nichts bestellt"
-        return f"{day.weekday}: {meal}"
+        if not day.ordered_options:
+            return "Nichts bestellt"
+        return ", ".join(o.description for o in day.ordered_options)
 
     @property
     def extra_state_attributes(self) -> dict:
-        day = relevant_day(self.coordinator.data or [], switch_hour=self._switch_hour())
-        return _day_to_dict(day) if day else {}
+        day = self._relevant_day()
+        if day is None:
+            return {}
+        attrs = _day_to_dict(day)
+        attrs["is_today"] = day.the_date == date.today()
+        return attrs
 
 
 class SchulessenNextSchoolDaySensor(_BaseSchulessenSensor):

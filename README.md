@@ -16,9 +16,17 @@ könnte.
 - **`sensor.schulessen_bestellt_heute`** (Anzeigename "Schulessen aktuelles
   Essen") – zeigt bis 14:00 Uhr das heutige bestellte Gericht, danach
   automatisch das des nächsten Schultags (Umschalt-Stunde einstellbar über
-  die Integrations-Optionen). Der Zustand nennt immer den Wochentag, z.B.
-  `Donnerstag: Wrap mit Hähnchenstreifen`, damit auf dem Dashboard nie
-  unklar ist, für welchen Tag das Gericht gilt.
+  die Integrations-Optionen). Zustand ist nur der Gerichtname; `date`,
+  `weekday` und `is_today` liegen als Attribute daneben, damit man sie in
+  einer Karte frei formatieren kann, z.B.:
+
+  ```yaml
+  type: markdown
+  content: >
+    **{{ state_attr('sensor.schulessen_bestellt_heute', 'weekday') }}**
+    ({{ state_attr('sensor.schulessen_bestellt_heute', 'date') }}):
+    {{ states('sensor.schulessen_bestellt_heute') }}
+  ```
 - **`sensor.schulessen_naechster_schultag`** – bestelltes Gericht (oder
   "Nichts bestellt") für den nächsten Tag mit Angeboten.
 - **`sensor.schulessen_menueplan`** – Liste aller kommenden Tage (aktuelle +
