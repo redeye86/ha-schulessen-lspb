@@ -20,12 +20,22 @@ könnte.
   `weekday` und `is_today` liegen als Attribute daneben, damit man sie in
   einer Karte frei formatieren kann, z.B.:
 
+  Achtung: die native `title:`-Zeile einer Markdown-Karte wird NICHT
+  templated - eine feste Überschrift wie "Dein Gericht heute" wird also nach
+  dem Umschalten falsch. Die Überschrift muss deshalb in `content` selbst
+  gebaut werden, z.B. mit `is_today`:
+
   ```yaml
   type: markdown
   content: >
-    **{{ state_attr('sensor.schulessen_bestellt_heute', 'weekday') }}**
-    ({{ state_attr('sensor.schulessen_bestellt_heute', 'date') }}):
-    {{ states('sensor.schulessen_bestellt_heute') }}
+    {% set s = 'sensor.schulessen_bestellt_heute' %}
+    ## Dein Gericht {{ 'heute' if state_attr(s, 'is_today') else 'am ' +
+    state_attr(s, 'weekday') }} ({{ state_attr(s, 'date') }})
+
+    {% for o in state_attr(s, 'options') %}{% if o.ordered %}
+    **{{ o.column }}**: {{ o.description }}
+
+    {% endif %}{% endfor %}
   ```
 - **`sensor.schulessen_naechster_schultag`** – bestelltes Gericht (oder
   "Nichts bestellt") für den nächsten Tag mit Angeboten.
